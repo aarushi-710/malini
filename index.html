@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Malini Chat</title>
+  <!-- Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Marked library for markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+    const API_KEY = "AIzaSyBL0-j4r_xkzGcDTET1azXacrKqoWsJPiA";  // Replace with your key if needed.
+    const MODEL_ID = "gemini-2.0-flash";
+
+    async function generateResponse() {
+      const promptInput = document.getElementById("promptInput");
+      const chatBox = document.getElementById("chatBox");
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      // Append user message
+      appendMessage("user", prompt);
+      promptInput.value = "";
+
+      // Show loading indicator
+      appendMessage("loading", "Malini is typing...");
+
+      try {
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        const model = genAI.getGenerativeModel({ model: MODEL_ID });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = await response.text();
+
+        // Use marked to parse Markdown to HTML
+        const formattedText = marked.parse(text);
+
+        removeLoadingMessage();
+        appendMessage("ai", formattedText);
+      } catch (error) {
+        removeLoadingMessage();
+        appendMessage("ai", "⚠️ Error retrieving response.");
+        console.error(error);
+      }
+    }
+
+    function appendMessage(sender, text) {
+      const chatBox = document.getElementById("chatBox");
+      const messageDiv = document.createElement("div");
+
+      if (sender === "user") {
+        messageDiv.className = "bg-blue-600 text-white self-end p-3 rounded-lg max-w-full break-words";
+      } else if (sender === "ai") {
+        messageDiv.className = "bg-gray-700 text-white self-start p-3 rounded-lg max-w-full break-words";
+      } else if (sender === "loading") {
+        messageDiv.className = "text-gray-400 italic self-start p-3";
+        messageDiv.id = "loadingMessage";
+      }
+      messageDiv.innerHTML = text;
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;  // Auto-scroll
+    }
+
+    function removeLoadingMessage() {
+      const loadingMsg = document.getElementById("loadingMessage");
+      if (loadingMsg) loadingMsg.remove();
+    }
+
+    // Event listeners
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("sendButton").addEventListener("click", generateResponse);
+      document.getElementById("promptInput").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          generateResponse();
+        }
+      });
+    });
+  </script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-2xl bg-gray-800 rounded-xl shadow-xl p-6 flex flex-col">
+    <!-- Header with logo and title -->
+    <div class="flex items-center space-x-4 mb-6">
+      <img src="https://cdn.discordapp.com/attachments/1292447964811366480/1353804437356937277/WhatsApp_Image_2025-03-25_at_00.19.08_b056aeb0.jpg?ex=67e2fc22&is=67e1aaa2&hm=0c76a2d3430ffcc014ff1c97e301b82abb8a9dd5408ea0a90673f266ef07283e&" alt="Malini Logo" class="w-16 h-16 rounded-full border-2 border-gray-600">
+      <h1 class="text-2xl font-bold">Hi there! i am Malini</h1>
+    </div>
+
+    <!-- Chat messages container -->
+    <div id="chatBox" class="flex flex-col space-y-3 overflow-y-auto h-96 p-3 border border-gray-700 rounded-lg"></div>
+
+    <!-- Input area -->
+    <div class="flex mt-4">
+      <input id="promptInput" type="text" placeholder="Type your message..." class="flex-1 bg-gray-700 text-white p-3 rounded-l-lg focus:outline-none" />
+      <button id="sendButton" class="bg-blue-600 px-4 py-2 rounded-r-lg hover:bg-blue-700">Send</button>
+    </div>
+  </div>
+</body>
+</html>
